@@ -1,0 +1,51 @@
+# ===================================================================
+# .gitignore untuk Proyek Python & Flask
+# ===================================================================
+
+# Kredensial dan File Konfigurasi Sensitif
+# Ini adalah bagian PALING PENTING untuk keamanan.
+# Abaikan file kunci API, kredensial, dan konfigurasi environment.
+ServiceAccountKey.json
+*.json
+.env
+.env.*
+secrets.yml
+
+# Folder Environment Virtual Python
+# Folder ini berisi semua library yang diinstal dan tidak boleh ada di Git.
+# Cukup andalkan file requirements.txt untuk melacak dependensi.
+.venv/
+venv/
+env/
+ENV/
+
+# Cache dan File Buatan Python
+# Dibuat otomatis oleh Python dan tidak perlu dilacak.
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# File spesifik sistem operasi yang sering muncul
+# (macOS, Windows, Linux)
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Direktori Build dan Distribusi
+# Dihasilkan saat membuat paket atau membangun proyek.
+/dist/
+/build/
+*.egg-info/
+
+# File Log
+# File log bisa menjadi besar dan biasanya tidak relevan untuk repositori.
+*.log
+*.log.*
+logs/
+
+# File editor dan IDE
+.vscode/
+.idea/
+*.swp
+*.swo
