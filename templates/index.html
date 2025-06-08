@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Sensor</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            font-weight: bold;
+        }
+        #last-update {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 10px;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        .value-display {
+            font-size: 2.5em;
+            font-weight: bold;
+            text-align: center;
+            margin: 15px 0;
+        }
+        .unit {
+            font-size: 0.5em;
+            vertical-align: super;
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        .status-online {
+            background-color: #28a745;
+        }
+        .status-offline {
+            background-color: #dc3545;
+        }
+        .table-responsive {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .threshold-info {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .threshold-range {
+            font-weight: bold;
+            color: #333;
+        }
+        .chart-container canvas {
+            max-height: 300px;
+        }
+        .date-filter {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .date-input-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .date-input-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .date-input-item label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Dashboard Monitoring Sensor & Analisis Penyiraman</h1>
+        <p id="last-update" class="text-center">
+            Terakhir diperbarui: <span id="update-time">--</span>
+            <span id="status-indicator" class="status-indicator status-offline"></span>
+        </p>
+        
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-danger text-white">
+                        Suhu Udara
+                    </div>
+                    <div class="card-body">
+                        <div class="value-display">
+                            <span id="suhu-value">--</span><span class="unit">°C</span>
+                        </div>
+                        <div class="threshold-info text-center">
+                            Rentang optimal: <span class="threshold-range">20°C - 31°C</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        Kelembapan Udara
+                    </div>
+                    <div class="card-body">
+                        <div class="value-display">
+                            <span id="kelembapan-udara-value">--</span><span class="unit">%</span>
+                        </div>
+                        <div class="threshold-info text-center">
+                            Rentang optimal: <span class="threshold-range">75% - 80%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        Kelembapan Tanah
+                    </div>
+                    <div class="card-body">
+                        <div class="value-display">
+                            <span id="kelembapan-tanah-value">--</span><span class="unit">%</span>
+                        </div>
+                        <div class="threshold-info text-center">
+                            Rentang optimal: <span class="threshold-range">60% - 75%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Date Range Filter -->
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="date-filter">
+                    <div class="date-input-group">
+                        <div class="date-input-item">
+                            <label>Dari Tanggal:</label>
+                            <input type="date" class="form-control" id="startDate">
+                        </div>
+                        
+                        <div class="date-input-item">
+                            <label>Sampai Tanggal:</label>
+                            <input type="date" class="form-control" id="endDate">
+                        </div>
+                        
+                        <div class="date-input-item">
+                            <label>&nbsp;</label>
+                            <button class="btn btn-primary" id="applyFilter">Filter</button>
+                        </div>
+                        
+                        <div class="date-input-item">
+                            <label>&nbsp;</label>
+                            <button class="btn btn-secondary" id="clearFilter">Semua Data</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-12 mb-4">
+                <div class="card">
+                    <div class="card-header bg-danger text-white">
+                        Grafik Suhu Udara
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="suhuChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-12 mb-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        Grafik Kelembapan Udara
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="kelembapanUdaraChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-12 mb-4">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        Grafik Kelembapan Tanah
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="kelembapanTanahChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12 mb-4">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        Riwayat Analisis Penyiraman (Berdasarkan Ambang Batas)
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <strong>Logika Penyiraman:</strong> Jika salah satu parameter berada di luar rentang optimal, maka keputusan adalah "siram" (1).
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Waktu Analisis</th>
+                                        <th>Suhu (°C)</th>
+                                        <th>Kelemb. Udara (%)</th>
+                                        <th>Kelemb. Tanah (%)</th>
+                                        <th>Keputusan</th>
+                                        <th>Alasan</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="watering-history-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12 mb-4">
+                <div class="card">
+                    <div class="card-header bg-warning text-dark">
+                        Analisis Penyiraman Terbaru
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2 mb-3">
+                            <button id="analyze-btn" class="btn btn-primary">Analisis Penyiraman Sekarang</button>
+                        </div>
+                        <div id="analysis-result" class="alert alert-light">
+                            Klik tombol di atas untuk melakukan analisis penyiraman.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+    <script>
+        // Variabel untuk menyimpan instance chart
+        let suhuChart, kelembapanUdaraChart, kelembapanTanahChart;
+        
+        // Fungsi untuk format timestamp menjadi tanggal dan waktu lengkap
+        function formatFullDateTime(timestamp) {
+            const ts = typeof timestamp === 'number' && timestamp > 1000000000000 ? timestamp : timestamp * 1000;
+            const date = new Date(ts);
+            
+            // Format: DD/MM/YYYY HH:MM:SS
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            
+            return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+        }
+        
+        // Fungsi untuk format timestamp menjadi tanggal dan waktu singkat (untuk chart)
+        function formatChartDateTime(timestamp) {
+            const ts = typeof timestamp === 'number' && timestamp > 1000000000000 ? timestamp : timestamp * 1000;
+            const date = new Date(ts);
+            
+            // Format: DD/MM HH:MM (lebih singkat untuk chart)
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            
+            return `${day}/${month} ${hours}:${minutes}`;
+        }
+        
+        // Fungsi untuk mengambil data sensor dari API dengan range tanggal
+        async function fetchSensorData(startDate = null, endDate = null) {
+            try {
+                let url = '/api/sensor-data?sort=datetime&limit=1000';
+                
+                // Jika ada range tanggal yang dipilih
+                if (startDate && endDate) {
+                    const startOfDay = new Date(startDate);
+                    startOfDay.setHours(0, 0, 0, 0);
+                    
+                    const endOfDay = new Date(endDate);
+                    endOfDay.setHours(23, 59, 59, 999);
+                    
+                    const startTimestamp = Math.floor(startOfDay.getTime() / 1000);
+                    const endTimestamp = Math.floor(endOfDay.getTime() / 1000);
+                    
+                    url += `&start=${startTimestamp}&end=${endTimestamp}`;
+                    
+                    console.log(`Filtering data from ${startDate} to ${endDate}`);
+                    console.log(`Timestamp range: ${startTimestamp} to ${endTimestamp}`);
+                }
+                
+                console.log('Fetching sensor data from:', url);
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                console.log('Sensor Data for charts:', data);
+                return data;
+            } catch (error) {
+                console.error('Error fetching sensor data for charts:', error);
+                return [];
+            }
+        }
+        
+        // Fungsi untuk mengambil data terbaru (untuk cards)
+        async function fetchLatestData() {
+            try {
+                const response = await fetch('/api/latest-data');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('Latest Data for cards:', data);
+                return data;
+            } catch (error) {
+                console.error('Error fetching latest data for cards:', error);
+                return null;
+            }
+        }
+
+        // Fungsi untuk mengambil riwayat analisis penyiraman
+        async function fetchWateringHistory() {
+            try {
+                const response = await fetch('/api/watering-history');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const result = await response.json();
+                console.log('Watering History:', result);
+                if (result.success && Array.isArray(result.data)) {
+                    return result.data;
+                }
+                console.error('Invalid format for watering history:', result);
+                return [];
+            } catch (error) {
+                console.error('Error fetching watering history:', error);
+                return [];
+            }
+        }
+
+        // Fungsi untuk melakukan analisis penyiraman
+        async function analyzeWatering() {
+            try {
+                const resultDiv = document.getElementById('analysis-result');
+                resultDiv.className = 'alert alert-info';
+                resultDiv.textContent = 'Sedang menganalisis...';
+                
+                const response = await fetch('/api/analyze-watering');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('Watering Analysis Result:', result);
+                
+                if (result.success) {
+                    const decision = result.decision;
+                    const reason = result.reason || 'Tidak ada alasan yang diberikan';
+                    
+                    resultDiv.className = decision === 'siram' ? 
+                        'alert alert-success' : 'alert alert-danger';
+                    
+                    let resultHTML = `
+                        <h4>Hasil Analisis:</h4>
+                        <p><strong>Keputusan:</strong> ${decision}</p>
+                        <p><strong>Alasan:</strong> ${reason}</p>
+                        <p><strong>Data Sensor:</strong></p>
+                        <ul>
+                            <li>Suhu: ${result.sensor_data.temperature.toFixed(1)}°C</li>
+                            <li>Kelembapan Udara: ${result.sensor_data.humidity.toFixed(1)}%</li>
+                            <li>Kelembapan Tanah: ${result.sensor_data.soil_moisture.toFixed(1)}%</li>
+                        </ul>
+                    `;
+                    
+                    resultDiv.innerHTML = resultHTML;
+                    
+                    // Refresh watering history table
+                    const newHistoryData = await fetchWateringHistory();
+                    updateWateringHistoryTable(newHistoryData);
+                } else {
+                    resultDiv.className = 'alert alert-danger';
+                    resultDiv.textContent = 'Gagal melakukan analisis: ' + (result.error || 'Kesalahan tidak diketahui');
+                }
+            } catch (error) {
+                console.error('Error analyzing watering:', error);
+                const resultDiv = document.getElementById('analysis-result');
+                resultDiv.className = 'alert alert-danger';
+                resultDiv.textContent = 'Error: ' + error.message;
+            }
+        }
+
+        // Fungsi untuk memperbarui status koneksi
+        function updateStatus(isOnline) {
+            const statusIndicator = document.getElementById('status-indicator');
+            if (isOnline) {
+                statusIndicator.className = 'status-indicator status-online';
+            } else {
+                statusIndicator.className = 'status-indicator status-offline';
+            }
+        }
+        
+        // Fungsi untuk memperbarui tampilan nilai terkini di cards
+        function updateCurrentValues(data) {
+            if (!data) {
+                console.log('No data to update card values');
+                updateStatus(false);
+                document.getElementById('suhu-value').textContent = '--';
+                document.getElementById('kelembapan-udara-value').textContent = '--';
+                document.getElementById('kelembapan-tanah-value').textContent = '--';
+                document.getElementById('update-time').textContent = new Date().toLocaleString('id-ID');
+                return;
+            }
+            
+            console.log('Updating card values with data:', data);
+            updateStatus(true);
+            
+            const suhuElement = document.getElementById('suhu-value');
+            const kelembapanUdaraElement = document.getElementById('kelembapan-udara-value');
+            const kelembapanTanahElement = document.getElementById('kelembapan-tanah-value');
+            
+            suhuElement.textContent = (data.suhu_udara !== undefined && data.suhu_udara !== null) 
+                ? parseFloat(data.suhu_udara).toFixed(1) : '--';
+            
+            kelembapanUdaraElement.textContent = (data.kelembapan_udara !== undefined && data.kelembapan_udara !== null) 
+                ? parseFloat(data.kelembapan_udara).toFixed(1) : '--';
+            
+            kelembapanTanahElement.textContent = (data.kelembapan_tanah !== undefined && data.kelembapan_tanah !== null) 
+                ? parseFloat(data.kelembapan_tanah).toFixed(1) : '--';
+            
+            const updateTimeElement = document.getElementById('update-time');
+            let updateTimeDisplay;
+            if (data.timestamp) {
+                updateTimeDisplay = formatFullDateTime(data.timestamp);
+            } else {
+                updateTimeDisplay = new Date().toLocaleString('id-ID');
+            }
+            updateTimeElement.textContent = updateTimeDisplay;
+        }
+        
+        // Fungsi untuk menginisialisasi chart
+        function initializeCharts(sensorDataArray) {
+            if (!Array.isArray(sensorDataArray) || sensorDataArray.length === 0) {
+                console.log('No data available for charts initialization.');
+                return;
+            }
+
+            // Format timestamps untuk chart
+            const timestamps = sensorDataArray.map(item => formatChartDateTime(item.timestamp));
+            
+            const suhuData = sensorDataArray.map(item => parseFloat(item.temperature) || 0);
+            const kelembapanUdaraData = sensorDataArray.map(item => parseFloat(item.humidity) || 0);
+            const kelembapanTanahData = sensorDataArray.map(item => parseFloat(item.soil_moisture) || 0);
+            
+            const chartOptions = (yLabel) => ({
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { 
+                        beginAtZero: false, 
+                        title: { display: true, text: yLabel } 
+                    },
+                    x: { 
+                        title: { display: true, text: 'Tanggal & Waktu' },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            font: {
+                                size: 10
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                const index = context[0].dataIndex;
+                                return formatFullDateTime(sensorDataArray[index].timestamp);
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (suhuChart) suhuChart.destroy();
+            const suhuCtx = document.getElementById('suhuChart').getContext('2d');
+            suhuChart = new Chart(suhuCtx, {
+                type: 'line',
+                data: { 
+                    labels: timestamps, 
+                    datasets: [{ 
+                        label: 'Suhu Udara (°C)', 
+                        data: suhuData, 
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)', 
+                        borderColor: 'rgba(255, 99, 132, 1)', 
+                        borderWidth: 2, 
+                        pointRadius: 3, 
+                        tension: 0.1 
+                    }] 
+                },
+                options: chartOptions('Suhu (°C)')
+            });
+            
+            if (kelembapanUdaraChart) kelembapanUdaraChart.destroy();
+            const kelembapanUdaraCtx = document.getElementById('kelembapanUdaraChart').getContext('2d');
+            kelembapanUdaraChart = new Chart(kelembapanUdaraCtx, {
+                type: 'line',
+                data: { 
+                    labels: timestamps, 
+                    datasets: [{ 
+                        label: 'Kelembapan Udara (%)', 
+                        data: kelembapanUdaraData, 
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)', 
+                        borderColor: 'rgba(54, 162, 235, 1)', 
+                        borderWidth: 2, 
+                        pointRadius: 3, 
+                        tension: 0.1 
+                    }] 
+                },
+                options: chartOptions('Kelembapan (%)')
+            });
+            
+            if (kelembapanTanahChart) kelembapanTanahChart.destroy();
+            const kelembapanTanahCtx = document.getElementById('kelembapanTanahChart').getContext('2d');
+            kelembapanTanahChart = new Chart(kelembapanTanahCtx, {
+                type: 'line',
+                data: { 
+                    labels: timestamps, 
+                    datasets: [{ 
+                        label: 'Kelembapan Tanah (%)', 
+                        data: kelembapanTanahData, 
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)', 
+                        borderColor: 'rgba(75, 192, 192, 1)', 
+                        borderWidth: 2, 
+                        pointRadius: 3, 
+                        tension: 0.1 
+                    }] 
+                },
+                options: chartOptions('Kelembapan (%)')
+            });
+        }
+        
+        // Fungsi untuk memperbarui chart dengan data baru
+        function updateCharts(sensorDataArray) {
+            if (!Array.isArray(sensorDataArray) || sensorDataArray.length === 0) {
+                console.log('No new data to update charts.');
+                return;
+            }
+            
+            const timestamps = sensorDataArray.map(item => formatChartDateTime(item.timestamp));
+            const suhuData = sensorDataArray.map(item => parseFloat(item.temperature) || 0);
+            const kelembapanUdaraData = sensorDataArray.map(item => parseFloat(item.humidity) || 0);
+            const kelembapanTanahData = sensorDataArray.map(item => parseFloat(item.soil_moisture) || 0);
+            
+            if (suhuChart) {
+                suhuChart.data.labels = timestamps;
+                suhuChart.data.datasets[0].data = suhuData;
+                suhuChart.update();
+            }
+            if (kelembapanUdaraChart) {
+                kelembapanUdaraChart.data.labels = timestamps;
+                kelembapanUdaraChart.data.datasets[0].data = kelembapanUdaraData;
+                kelembapanUdaraChart.update();
+            }
+            if (kelembapanTanahChart) {
+                kelembapanTanahChart.data.labels = timestamps;
+                kelembapanTanahChart.data.datasets[0].data = kelembapanTanahData;
+                kelembapanTanahChart.update();
+            }
+        }
+
+        // Fungsi untuk memperbarui tabel riwayat penyiraman
+        function updateWateringHistoryTable(historyData) {
+            const tbody = document.getElementById('watering-history-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            if (!Array.isArray(historyData) || historyData.length === 0) {
+                const tr = tbody.insertRow();
+                const td = tr.insertCell();
+                td.colSpan = 6;
+                td.textContent = 'Tidak ada riwayat analisis.';
+                td.style.textAlign = 'center';
+                return;
+            }
+
+            historyData.forEach(item => {
+                const tr = tbody.insertRow();
+                
+                let dateTimeDisplay = 'N/A';
+                if (item.time) {
+                    dateTimeDisplay = formatFullDateTime(new Date(item.time).getTime());
+                } else if (item.timestamp) {
+                    dateTimeDisplay = formatFullDateTime(item.timestamp);
+                }
+                tr.insertCell().textContent = dateTimeDisplay;
+
+                tr.insertCell().textContent = (item.temperature !== undefined && item.temperature !== null) ? parseFloat(item.temperature).toFixed(1) : 'N/A';
+                tr.insertCell().textContent = (item.humidity !== undefined && item.humidity !== null) ? parseFloat(item.humidity).toFixed(1) : 'N/A';
+                tr.insertCell().textContent = (item.soil_moisture !== undefined && item.soil_moisture !== null) ? parseFloat(item.soil_moisture).toFixed(1) : 'N/A';
+                
+                const decisionCell = tr.insertCell();
+                const keputusan = item.keputusan_penyiraman === 1 || item.keputusan_text === 'siram' ? 'Siram' : 'Jangan Siram';
+                const badgeClass = keputusan === 'Siram' ? 'badge bg-success' : 'badge bg-danger';
+                decisionCell.innerHTML = `<span class="${badgeClass}">${keputusan}</span>`;
+                
+                tr.insertCell().textContent = item.alasan || 'N/A';
+            });
+        }
+
+        // Setup filter range tanggal
+        function setupDateRangeFilter() {
+            // Tombol Filter
+            document.getElementById('applyFilter').addEventListener('click', async function() {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                
+                if (!startDate || !endDate) {
+                    alert('Silakan pilih tanggal mulai dan tanggal akhir.');
+                    return;
+                }
+                
+                if (new Date(startDate) > new Date(endDate)) {
+                    alert('Tanggal mulai tidak boleh lebih besar dari tanggal akhir.');
+                    return;
+                }
+                
+                console.log(`Filtering data from ${startDate} to ${endDate}`);
+                const filteredData = await fetchSensorData(startDate, endDate);
+                
+                if (filteredData.length > 0) {
+                    updateCharts(filteredData);
+                    console.log(`Found ${filteredData.length} data points in the selected range.`);
+                } else {
+                    initializeCharts([]);
+                    alert('Tidak ada data dalam rentang tanggal yang dipilih.');
+                }
+            });
+
+            // Tombol Semua Data
+            document.getElementById('clearFilter').addEventListener('click', async function() {
+                document.getElementById('startDate').value = '';
+                document.getElementById('endDate').value = '';
+                console.log('Showing all data...');
+                
+                const allData = await fetchSensorData();
+                if (allData.length > 0) {
+                    updateCharts(allData);
+                } else {
+                    initializeCharts([]);
+                }
+            });
+        }
+        
+        // Fungsi utama
+        async function main() {
+            console.log('Initializing dashboard...');
+            
+            // Setup filter range tanggal
+            setupDateRangeFilter();
+            
+            // Muat data awal
+            const initialSensorData = await fetchSensorData();
+            if (initialSensorData.length > 0) {
+                initializeCharts(initialSensorData);
+            } else {
+                console.log('No initial sensor data for charts.');
+                initializeCharts([]);
+            }
+            
+            // Muat data terbaru untuk cards
+            const latestCardData = await fetchLatestData();
+            updateCurrentValues(latestCardData);
+
+            // Muat riwayat analisis
+            const initialHistoryData = await fetchWateringHistory();
+            updateWateringHistoryTable(initialHistoryData);
+
+            // Event listener untuk tombol analisis
+            const analyzeBtn = document.getElementById('analyze-btn');
+            if (analyzeBtn) {
+                analyzeBtn.addEventListener('click', analyzeWatering);
+            }
+
+            // Update otomatis setiap 30 detik (hanya cards dan history)
+            setInterval(async () => {
+                console.log('Updating data periodically...');
+                
+                const newLatestCardData = await fetchLatestData();
+                updateCurrentValues(newLatestCardData);
+
+                const newHistoryData = await fetchWateringHistory();
+                updateWateringHistoryTable(newHistoryData);
+
+            }, 30000);
+        }
+
+        // Load dashboard
+        window.addEventListener('load', main);
+        
+        // Handle online/offline
+        window.addEventListener('online', () => {
+            console.log('Connection restored');
+            updateStatus(true);
+            main();
+        });
+        
+        window.addEventListener('offline', () => {
+            console.log('Connection lost');
+            updateStatus(false);
+            updateCurrentValues(null);
+        });
+    </script>
+</body>
+</html>
