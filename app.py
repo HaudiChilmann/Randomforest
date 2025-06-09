@@ -18,12 +18,23 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Inisialisasi Firebase
-cred_path = os.path.join(os.path.dirname(__file__), 'ServiceAccountKey.json')
-cred = credentials.Certificate(cred_path)
-firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://anggur-dataset-default-rtdb.asia-southeast1.firebasedatabase.app/'
-})
+# Inisialisasi Firebase dari Environment Variable
+cred_json_str = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+
+if not cred_json_str:
+    # Ini akan membuat aplikasi crash jika variabel tidak ditemukan,
+    # yang bagus untuk mengetahui error lebih awal.
+    raise ValueError("Variabel GOOGLE_CREDENTIALS_JSON tidak diatur di Render.")
+
+cred_info = json.loads(cred_json_str)
+cred = credentials.Certificate(cred_info)
+
+# Cek apakah aplikasi Firebase sudah diinisialisasi atau belum
+# Ini untuk mencegah error jika kode ini terpanggil lebih dari sekali
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(cred, {
+        'databaseURL': 'https://anggur-dataset-default-rtdb.asia-southeast1.firebasedatabase.app/'
+    })
 
 # Inisialisasi Firestore
 firestore_client = firestore.client()
