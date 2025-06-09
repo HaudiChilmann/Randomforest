@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Sensor</title>
+    <title>Dashboard Prediksi Random Forest</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -90,7 +90,7 @@
 </head>
 <body>
     <div class="container mt-4">
-        <h1 class="text-center mb-4">Dashboard Monitoring Sensor & Analisis Penyiraman</h1>
+        <h1 class="text-center mb-4">Dashboard Monitoring & Prediksi Penyiraman</h1>
         <p id="last-update" class="text-center">
             Terakhir diperbarui: <span id="update-time">--</span>
             <span id="status-indicator" class="status-indicator status-offline"></span>
@@ -106,9 +106,7 @@
                         <div class="value-display">
                             <span id="suhu-value">--</span><span class="unit">°C</span>
                         </div>
-                        <div class="threshold-info text-center">
-                            Rentang optimal: <span class="threshold-range">20°C - 31°C</span>
-                        </div>
+                       
                     </div>
                 </div>
             </div>
@@ -122,9 +120,7 @@
                         <div class="value-display">
                             <span id="kelembapan-udara-value">--</span><span class="unit">%</span>
                         </div>
-                        <div class="threshold-info text-center">
-                            Rentang optimal: <span class="threshold-range">75% - 80%</span>
-                        </div>
+                        
                     </div>
                 </div>
             </div>
@@ -138,9 +134,7 @@
                         <div class="value-display">
                             <span id="kelembapan-tanah-value">--</span><span class="unit">%</span>
                         </div>
-                        <div class="threshold-info text-center">
-                            Rentang optimal: <span class="threshold-range">60% - 75%</span>
-                        </div>
+                        
                     </div>
                 </div>
             </div>
@@ -224,7 +218,7 @@
                     </div>
                     <div class="card-body">
                         <div class="alert alert-info">
-                            <strong>Logika Penyiraman:</strong> Jika salah satu parameter berada di luar rentang optimal, maka keputusan adalah "siram" (1).
+                            <strong>Logika Penyiraman:</strong> Jika salah satu parameter berada di luar ambang batas, maka keputusan adalah "siram" (1).
                         </div>
                         <div class="table-responsive">
                             <table class="table table-striped table-hover">
@@ -258,7 +252,7 @@
                             <button id="analyze-btn" class="btn btn-primary">Analisis Penyiraman Sekarang</button>
                         </div>
                         <div id="analysis-result" class="alert alert-light">
-                            Klik tombol di atas untuk melakukan analisis penyiraman.
+                            Klik tombol di atas untuk melakukan prediksi manual.
                         </div>
                     </div>
                 </div>
