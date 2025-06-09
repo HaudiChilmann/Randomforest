@@ -15,6 +15,20 @@ import json
 
 app = Flask(__name__)
 
+@app.route('/jalankan-prediksi-rahasia')
+def jalankan_prediksi_terjadwal():
+    try:
+        # Panggil fungsi prediksi utama Anda di sini
+        # Contoh: fungsi_prediksi_anda() 
+        print("--- MENJALANKAN PREDIKSI TERJADWAL ---")
+        # Letakkan logika atau panggil fungsi prediksi Anda di sini
+        print("--- PREDIKSI SELESAI ---")
+        
+        return "OK, Prediksi berhasil dijalankan.", 200
+    except Exception as e:
+        print(f"Error saat menjalankan prediksi terjadwal: {e}")
+        return "Gagal menjalankan prediksi.", 500
+    
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
